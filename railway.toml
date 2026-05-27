@@ -2,4 +2,4 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "npm run build && npm run start"
+startCommand = "node dist/app.js"
