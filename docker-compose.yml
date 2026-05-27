@@ -1,0 +1,31 @@
+﻿services:
+  mysql:
+    image: mysql:8.0
+    container_name: porybot_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: porybot
+      MYSQL_USER: porybot_user
+      MYSQL_PASSWORD: porybot_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - porybot_mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: porybot_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+volumes:
+  porybot_mysql_data:
