@@ -1,8 +1,9 @@
 ﻿import { pool } from '../config/database';
 import { Battle, BattleWithTurns, BattleTurn, BattleResult } from '../types';
+import { randomUUID } from 'crypto';
 
 export async function createBattle(userId: string, botTeamId: string | null): Promise<Battle> {
-  const battleId = crypto.randomUUID();
+  const battleId = randomUUID();
   await pool.query('INSERT INTO battles (id, user_id, bot_team_id) VALUES (?, ?, ?)', [battleId, userId, botTeamId]);
   const [rows] = await pool.query<any[]>('SELECT * FROM battles WHERE id = ?', [battleId]);
   return rows[0] as Battle;

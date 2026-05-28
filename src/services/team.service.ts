@@ -1,5 +1,6 @@
 ﻿import { pool } from '../config/database';
 import { Team, TeamWithPokemon, TeamPokemon, TeamType } from '../types';
+import { randomUUID } from 'crypto';
 
 export function parsePaste(paste: string): Omit<TeamPokemon, 'id' | 'team_id'>[] {
   const pokemon: Omit<TeamPokemon, 'id' | 'team_id'>[] = [];
@@ -70,7 +71,7 @@ export async function createTeam(ownerId: string, userRole: string, data: { name
 
   // Validar equipo contra Showdown
   await validarEquipoShowdown(data.paste, data.regulation);
-  const teamId = crypto.randomUUID();
+  const teamId = randomUUID();
   await pool.query('INSERT INTO teams (id, owner_id, name, regulation, paste, type) VALUES (?, ?, ?, ?, ?, ?)', [teamId, ownerId, data.name, data.regulation, data.paste, data.type]);
   const parsedPokemon = parsePaste(data.paste);
   for (const poke of parsedPokemon) {
