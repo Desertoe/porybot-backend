@@ -88,6 +88,40 @@ export async function updateProfile(userId: string, data: {
   return getProfile(userId);
 }
 
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from './email.service';
+
+export async function forgotPassword(email: string): Promise<void> {
+  const [rows] = await pool.query<any[]>('SELECT id FROM users WHERE email = ?', [email]);
+  if (rows.length === 0) return; // No revelar si el email existe
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 3600000); // 1 hora
+
+  await pool.query(
+    'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?',
+    [token, expires, email]
+  );
+
+  await sendPasswordResetEmail(email, token);
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  if (newPassword.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres');
+
+  const [rows] = await pool.query<any[]>(
+    'SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+    [token]
+  );
+  if (rows.length === 0) throw new Error('Token inválido o expirado');
+
+  const hash = await bcrypt.hash(newPassword, 12);
+  await pool.query(
+    'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+    [hash, rows[0].id]
+  );
+}
+
 function signToken(userId: string, role: string): string {
   return jwt.sign({ userId, role } as JwtPayload, env.jwt.secret, { expiresIn: env.jwt.expiresIn } as any);
 }

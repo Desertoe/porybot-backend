@@ -25,3 +25,21 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
   try { res.json(await authService.updateProfile(req.user!.userId, req.body)); }
   catch (err: any) { res.status(400).json({ message: err.message }); }
 }
+
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  try {
+    await authService.forgotPassword(req.body.email);
+    res.json({ message: 'Si ese email existe, recibirás un correo en breve' });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  try {
+    await authService.resetPassword(req.body.token, req.body.password);
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err: any) {
+    res.status(400).json({ message: err.message });
+  }
+}
