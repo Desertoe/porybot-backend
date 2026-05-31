@@ -18,9 +18,20 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const env_1 = require("../config/env");
 const clients = new Map();
 let botSocket = null;
+const pendingBotMessages = [];
 function registerBotSocket(ws) {
     botSocket = ws;
     console.log('Bot conectado al WebSocket');
+    // Enviar mensajes pendientes acumulados mientras el bot estaba desconectado
+    while (pendingBotMessages.length > 0) {
+        const msg = pendingBotMessages.shift();
+        if (msg) {
+            ws.send(JSON.stringify(msg));
+            console.log('[Bot] Mensaje pendiente enviado:', JSON.stringify(msg).slice(0, 80));
+        }
+    }
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
     ws.on('close', () => { botSocket = null; console.log('Bot desconectado'); });
     ws.on('error', console.error);
 }
@@ -29,6 +40,9 @@ function sendToBotSocket(data) {
         botSocket.send(JSON.stringify(data));
         return true;
     }
+    // Bot no conectado — encolar el mensaje para enviarlo cuando reconecte
+    pendingBotMessages.push(data);
+    console.log('[Bot] No conectado — mensaje encolado:', JSON.stringify(data).slice(0, 80));
     return false;
 }
 function isBotConnected() {
@@ -42,8 +56,6 @@ function createWebSocketServer(server) {
         const isBotKey = url.searchParams.get('bot_key');
         if (isBotKey === env_1.env.jwt.secret) {
             registerBotSocket(ws);
-            ws.isAlive = true;
-            ws.on('pong', () => { ws.isAlive = true; });
             return;
         }
         if (!token) {

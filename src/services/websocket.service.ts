@@ -8,10 +8,23 @@ interface AuthenticatedSocket extends WebSocket { userId?: string; }
 const clients = new Map<string, AuthenticatedSocket>();
 
 let botSocket: WebSocket | null = null;
+const pendingBotMessages: object[] = [];
 
 export function registerBotSocket(ws: WebSocket): void {
   botSocket = ws;
   console.log('Bot conectado al WebSocket');
+
+  // Enviar mensajes pendientes acumulados mientras el bot estaba desconectado
+  while (pendingBotMessages.length > 0) {
+    const msg = pendingBotMessages.shift();
+    if (msg) {
+      ws.send(JSON.stringify(msg));
+      console.log('[Bot] Mensaje pendiente enviado:', JSON.stringify(msg).slice(0, 80));
+    }
+  }
+
+  (ws as any).isAlive = true;
+  ws.on('pong', () => { (ws as any).isAlive = true; });
   ws.on('close', () => { botSocket = null; console.log('Bot desconectado'); });
   ws.on('error', console.error);
 }
@@ -21,6 +34,9 @@ export function sendToBotSocket(data: object): boolean {
     botSocket.send(JSON.stringify(data));
     return true;
   }
+  // Bot no conectado — encolar el mensaje para enviarlo cuando reconecte
+  pendingBotMessages.push(data);
+  console.log('[Bot] No conectado — mensaje encolado:', JSON.stringify(data).slice(0, 80));
   return false;
 }
 
@@ -37,8 +53,6 @@ export function createWebSocketServer(server: any): WebSocketServer {
 
     if (isBotKey === env.jwt.secret) {
       registerBotSocket(ws);
-      (ws as any).isAlive = true;
-      ws.on('pong', () => { (ws as any).isAlive = true; });
       return;
     }
 
@@ -54,15 +68,14 @@ export function createWebSocketServer(server: any): WebSocketServer {
   });
 
   const interval = setInterval(() => {
-  wss.clients.forEach((ws: any) => {
-    if (ws.isAlive === false) { ws.terminate(); return; }
-    ws.isAlive = false;
-    ws.ping();
-  });
-}, 25000);
+    wss.clients.forEach((ws: any) => {
+      if (ws.isAlive === false) { ws.terminate(); return; }
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, 25000);
 
-wss.on('close', () => clearInterval(interval));
-
+  wss.on('close', () => clearInterval(interval));
   return wss;
 }
 
