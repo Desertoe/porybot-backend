@@ -42,5 +42,7 @@ router.post('/register', [(0, express_validator_1.body)('username').isLength({ m
 router.post('/login', [(0, express_validator_1.body)('email').isEmail().normalizeEmail(), (0, express_validator_1.body)('password').notEmpty()], authController.login);
 router.get('/me', auth_middleware_1.authMiddleware, authController.getMe);
 router.patch('/me', auth_middleware_1.authMiddleware, authController.updateMe);
+router.post('/forgot-password', [(0, express_validator_1.body)('email').isEmail().normalizeEmail()], authController.forgotPassword);
+router.post('/reset-password', [(0, express_validator_1.body)('token').notEmpty(), (0, express_validator_1.body)('password').isLength({ min: 6 })], authController.resetPassword);
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

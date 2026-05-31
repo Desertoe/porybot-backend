@@ -7,6 +7,8 @@ exports.register = register;
 exports.login = login;
 exports.getProfile = getProfile;
 exports.updateProfile = updateProfile;
+exports.forgotPassword = forgotPassword;
+exports.resetPassword = resetPassword;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = require("../config/database");
@@ -94,6 +96,26 @@ async function updateProfile(userId, data) {
     values.push(userId);
     await database_1.pool.query('UPDATE users SET ' + fields.join(', ') + ' WHERE id = ?', values);
     return getProfile(userId);
+}
+const crypto_1 = __importDefault(require("crypto"));
+const email_service_1 = require("./email.service");
+async function forgotPassword(email) {
+    const [rows] = await database_1.pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (rows.length === 0)
+        return; // No revelar si el email existe
+    const token = crypto_1.default.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600000); // 1 hora
+    await database_1.pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?', [token, expires, email]);
+    await (0, email_service_1.sendPasswordResetEmail)(email, token);
+}
+async function resetPassword(token, newPassword) {
+    if (newPassword.length < 6)
+        throw new Error('La contraseña debe tener al menos 6 caracteres');
+    const [rows] = await database_1.pool.query('SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()', [token]);
+    if (rows.length === 0)
+        throw new Error('Token inválido o expirado');
+    const hash = await bcryptjs_1.default.hash(newPassword, 12);
+    await database_1.pool.query('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?', [hash, rows[0].id]);
 }
 function signToken(userId, role) {
     return jsonwebtoken_1.default.sign({ userId, role }, env_1.env.jwt.secret, { expiresIn: env_1.env.jwt.expiresIn });

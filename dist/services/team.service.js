@@ -7,6 +7,7 @@ exports.getUserTeams = getUserTeams;
 exports.updateTeam = updateTeam;
 exports.deleteTeam = deleteTeam;
 const database_1 = require("../config/database");
+const crypto_1 = require("crypto");
 function parsePaste(paste) {
     const pokemon = [];
     const blocks = paste.trim().split(/\n\s*\n/);
@@ -69,7 +70,7 @@ async function createTeam(ownerId, userRole, data) {
     }
     // Validar equipo contra Showdown
     await validarEquipoShowdown(data.paste, data.regulation);
-    const teamId = crypto.randomUUID();
+    const teamId = (0, crypto_1.randomUUID)();
     await database_1.pool.query('INSERT INTO teams (id, owner_id, name, regulation, paste, type) VALUES (?, ?, ?, ?, ?, ?)', [teamId, ownerId, data.name, data.regulation, data.paste, data.type]);
     const parsedPokemon = parsePaste(data.paste);
     for (const poke of parsedPokemon) {

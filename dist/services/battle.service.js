@@ -7,8 +7,9 @@ exports.addBattleTurn = addBattleTurn;
 exports.getUserBattles = getUserBattles;
 exports.getBattleDetail = getBattleDetail;
 const database_1 = require("../config/database");
+const crypto_1 = require("crypto");
 async function createBattle(userId, botTeamId) {
-    const battleId = crypto.randomUUID();
+    const battleId = (0, crypto_1.randomUUID)();
     await database_1.pool.query('INSERT INTO battles (id, user_id, bot_team_id) VALUES (?, ?, ?)', [battleId, userId, botTeamId]);
     const [rows] = await database_1.pool.query('SELECT * FROM battles WHERE id = ?', [battleId]);
     return rows[0];

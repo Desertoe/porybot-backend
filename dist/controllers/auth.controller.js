@@ -37,6 +37,8 @@ exports.register = register;
 exports.login = login;
 exports.getMe = getMe;
 exports.updateMe = updateMe;
+exports.forgotPassword = forgotPassword;
+exports.resetPassword = resetPassword;
 const express_validator_1 = require("express-validator");
 const authService = __importStar(require("../services/auth.service"));
 async function register(req, res) {
@@ -78,6 +80,24 @@ async function getMe(req, res) {
 async function updateMe(req, res) {
     try {
         res.json(await authService.updateProfile(req.user.userId, req.body));
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+}
+async function forgotPassword(req, res) {
+    try {
+        await authService.forgotPassword(req.body.email);
+        res.json({ message: 'Si ese email existe, recibirás un correo en breve' });
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+}
+async function resetPassword(req, res) {
+    try {
+        await authService.resetPassword(req.body.token, req.body.password);
+        res.json({ message: 'Contraseña actualizada correctamente' });
     }
     catch (err) {
         res.status(400).json({ message: err.message });
