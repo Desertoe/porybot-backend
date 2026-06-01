@@ -91,6 +91,7 @@ async function forgotPassword(req, res) {
         res.json({ message: 'Si ese email existe, recibirás un correo en breve' });
     }
     catch (err) {
+        console.error('[forgotPassword ERROR]', err.message, err.code);
         res.status(500).json({ message: err.message });
     }
 }

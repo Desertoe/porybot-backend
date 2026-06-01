@@ -31,6 +31,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     await authService.forgotPassword(req.body.email);
     res.json({ message: 'Si ese email existe, recibirás un correo en breve' });
   } catch (err: any) {
+    console.error('[forgotPassword ERROR]', err.message, err.code);
     res.status(500).json({ message: err.message });
   }
 }
